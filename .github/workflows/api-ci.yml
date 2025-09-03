@@ -58,34 +58,32 @@ jobs:
   # 3️⃣ E2E (Linux + Docker MongoDB)
   # ------------------------------
   e2e:
-  runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-  services:
-    mongo-e2e:
-      image: mongo:6.0
-      ports:
-        - 27017:27017
-      env:
-        MONGO_INITDB_ROOT_USERNAME: test
-        MONGO_INITDB_ROOT_PASSWORD: test123
-        MONGO_INITDB_DATABASE: demo_e2e
+    services:
+      mongo-e2e:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: test
+          MONGO_INITDB_ROOT_PASSWORD: test123
+          MONGO_INITDB_DATABASE: demo_e2e
 
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-    - name: Install dependencies
-      run: npm ci
-      working-directory: ./api
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Run E2E tests
-      run: npm run test:e2e
-      working-directory: ./api
-      env:
-        MONGO_DB_NAME: demo_e2e
-        MONGO_URL: mongodb://test:test123@mongo-e2e:27017/demo_e2e?authSource=admin
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          MONGO_DB_NAME: demo_e2e
+          MONGO_URL: mongodb://test:test123@mongo-e2e:27017/demo_e2e?authSource=admin
