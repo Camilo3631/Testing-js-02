@@ -60,16 +60,16 @@ jobs:
           node-version: 20
       - run: npm ci
 
-      # 🔹 Espera MongoDB hasta 10 minutos
+      # 🔹 Espera MongoDB hasta 30 minutos
       - name: Wait for MongoDB
         run: |
-          echo "⏳ Waiting for MongoDB to be ready (max 10 minutes)..."
-          for i in {1..200}; do
+          echo "⏳ Waiting for MongoDB to be ready (max 30 minutes)..."
+          for i in {1..600}; do  # 600 * 3s ≈ 30 minutos
             mongosh "mongodb://test:test123@mongo-e2e:27017/demo_e2e?authSource=admin" --eval "db.adminCommand('ping')" && echo "✅ MongoDB ready!" && exit 0
-            echo "Mongo not ready yet... retry ($i/200)"
+            echo "Mongo not ready yet... retry ($i/600)"
             sleep 3
           done
-          echo "❌ MongoDB did not start in 10 minutes"
+          echo "❌ MongoDB did not start in 30 minutes"
           exit 1
 
       # 🔹 Ejecuta tests E2E
