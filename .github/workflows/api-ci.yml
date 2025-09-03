@@ -70,6 +70,11 @@ jobs:
           MONGO_INITDB_ROOT_USERNAME: test
           MONGO_INITDB_ROOT_PASSWORD: test123
           MONGO_INITDB_DATABASE: demo_e2e
+        options: >-
+          --health-cmd "mongosh --username test --password test123 --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
 
     steps:
       - name: 👍 Checkout
@@ -83,15 +88,16 @@ jobs:
       - name: 📥 Install Dependencies
         run: npm ci
 
-      - name: 🐢 Wait for MongoDB (retry loop)
+      - name: 🐢 Verify Mongo Health
         run: |
-          echo "⏳ Waiting for MongoDB to be ready..."
-          for i in {1..10}; do
-            nc -z mongo-e2e 27017 && echo "✅ MongoDB is up!" && exit 0
-            echo "Mongo not ready yet... retrying ($i/10)"
-            sleep 3
+          echo "⏳ Waiting for MongoDB healthcheck..."
+          for i in {1..12}; do
+            docker inspect --format='{{json .State.Health.Status}}' $(docker ps -qf "name=mongo-e2e") | grep -q "healthy" && echo "✅ MongoDB is healthy!" && exit 0
+            echo "Mongo not healthy yet... retrying ($i/12)"
+            sleep 5
           done
-          echo "❌ MongoDB did not start in time"
+          echo "❌ MongoDB did not reach healthy state"
+          docker logs $(docker ps -qf "name=mongo-e2e") || true
           exit 1
 
       - name: 🧪 Run E2E Tests
