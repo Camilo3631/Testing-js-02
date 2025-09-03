@@ -1,4 +1,4 @@
-name: API CI
+name: API CI  # Ciclo de integración continuo de nuestra API
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 defaults:
   run:
-    working-directory: ./api
+    working-directory: ./api  # Ajusta según dónde esté tu package.json
 
 jobs:
   # ------------------------------
@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npm run lint || true
+      - run: npm run lint || true  # No falla si hay errores
 
   # ------------------------------
   # 2️⃣ Unit Tests
@@ -61,11 +61,10 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      # 🔹 Espera 10s para que MongoDB esté listo
-      - run: sleep 10
-      # 🔹 Ejecuta tests E2E
+
+      # 🔹 Ejecuta tests E2E con el script correcto (case-sensitive)
       - name: Run E2E tests
         env:
           MONGO_DB_NAME: demo_e2e
-          MONGO_URL: mongodb://test:test123@mongo-e2e:27017/demo_e2e?authSource=admin
-        run: npm run test:e2e
+          MONGO_URL: mongodb://test:test123@mongo-e2e:27017/demo_e2e?authSource=admin&retryWrites=false
+        run: npm run test:E2E
