@@ -88,8 +88,12 @@ jobs:
           MONGO_DB_NAME: demo_e2e
           MONGO_URL: mongodb://test:test123@localhost:27017/demo_e2e?authSource=admin
 
-      # 🔹 Detener y borrar el contenedor
+      # 🔹 Detener y borrar el contenedor de manera segura
       - name: 🛑 Stop MongoDB Docker
         run: |
-          docker stop mongo-test
-          docker rm mongo-test
+          if [ $(docker ps -a -q -f name=mongo-test) ]; then
+            docker stop mongo-test
+            docker rm mongo-test
+          else
+            echo "MongoDB container not found, skipping stop/removal."
+          fi
