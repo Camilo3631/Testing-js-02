@@ -12,7 +12,7 @@ defaults:
 
 jobs:
   # ------------------------------
-  # 1️⃣ Linter
+  # 1️⃣ Linter (independiente)
   # ------------------------------
   lint:
     runs-on: ubuntu-latest
@@ -34,11 +34,10 @@ jobs:
           npm run lint || true
 
   # ------------------------------
-  # 2️⃣ Unit Test
+  # 2️⃣ Unit Tests (independiente)
   # ------------------------------
   unit-test:
     runs-on: ubuntu-latest
-    needs: lint
     steps:
       - name: 👍 Checkout
         uses: actions/checkout@v4
@@ -59,7 +58,6 @@ jobs:
   # ------------------------------
   e2e:
     runs-on: ubuntu-latest
-    needs: unit-test
 
     services:
       mongo-e2e:
@@ -71,10 +69,10 @@ jobs:
           MONGO_INITDB_ROOT_PASSWORD: test123
           MONGO_INITDB_DATABASE: demo_e2e
         options: >-
-          --health-cmd "mongosh --username test --password test123 --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 60   # 60 * 10s = hasta 10 minutos de espera
+          --health-cmd="mongosh --username test --password test123 --authenticationDatabase admin --eval db.adminCommand('ping')"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=60
 
     steps:
       - name: 👍 Checkout
