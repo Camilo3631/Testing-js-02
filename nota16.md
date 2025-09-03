@@ -112,3 +112,5 @@ jobs:
 
 
 Nota: usar defaults si poryecto monorepo si no lo es no lo uses pero si on:[pushs]
+
+Recuerda qué cada uno de los repositorios tiene su propio sistema por ejemplo GitLab tiene los paildds, BITBOKER tiene para correr este tipos 
