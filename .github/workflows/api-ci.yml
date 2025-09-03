@@ -1,7 +1,7 @@
 name: API CI  # ciclo de integración continuo de nuestra API
 
 on:
-  push: 
+  push:
     paths:
       - "api/**"
       - ".github/workflows/api-ci.yml"
@@ -10,45 +10,62 @@ defaults:
   run:
     working-directory: ./api
 
+# Jobs: cómo GitHub Actions automatiza tareas en distintos runners
 jobs:
   linter:
-    runs-on: macos-latest
+    runs-on: macos-latest  # corre en Mac
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout  # obtiene tu código
+        uses: actions/checkout@v4
+      - name: Setup Nodejs  # instala Node.js y cachea dependencias
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci  # instala dependencias
-      - run: npm run lint  # corre pruebas estáticas
+          cache: 'npm'
+          cache-dependency-path: ./api/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run linter  # pruebas estáticas
+        run: npm run lint
 
   unit-test:
-    runs-on: macos-latest
-    steps:  
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+    runs-on: macos-latest  # corre en Mac
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Nodejs
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci  # instala dependencias
-      - run: npm run test  # corre pruebas unitarias
+          cache: 'npm'
+          cache-dependency-path: ./api/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit tests
+        run: npm run test
 
   e2e:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest  # Linux necesario para services
+    services:
+      mongo:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: test
+          MONGO_INITDB_ROOT_PASSWORD: test123
+          MONGO_INITDB_DATABASE: demo_e2e
+        ports:
+          - 27017:27017
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Nodejs
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install MongoDB
-        run: |
-          brew tap mongodb/brew
-          brew install mongodb-community@6.0
-      - name: Start MongoDB
-        run: |
-          brew services start mongodb/brew/mongodb-community
-          sleep 5  # espera a que Mongo esté listo
-      - run: npm ci  # instala dependencias
+      - name: Install dependencies
+        run: npm ci
       - name: Run E2E tests
         run: npm run test:e2e
         env:
           MONGO_DB_NAME: demo_e2e
-          MONGO_URL: mongodb://localhost:27017/demo_e2e
+          MONGO_URL: mongodb://test:test123@mongo:27017/demo_e2e?authSource=admin
