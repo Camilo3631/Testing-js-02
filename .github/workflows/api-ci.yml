@@ -74,7 +74,7 @@ jobs:
           --health-cmd "mongosh --username test --password test123 --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")'"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 12
+          --health-retries 60   # 60 * 10s = hasta 10 minutos de espera
 
     steps:
       - name: 👍 Checkout
@@ -90,13 +90,13 @@ jobs:
 
       - name: 🐢 Verify Mongo Health
         run: |
-          echo "⏳ Waiting for MongoDB healthcheck..."
-          for i in {1..12}; do
+          echo "⏳ Waiting for MongoDB healthcheck (up to 10 minutes)..."
+          for i in {1..60}; do
             docker inspect --format='{{json .State.Health.Status}}' $(docker ps -qf "name=mongo-e2e") | grep -q "healthy" && echo "✅ MongoDB is healthy!" && exit 0
-            echo "Mongo not healthy yet... retrying ($i/12)"
-            sleep 5
+            echo "Mongo not healthy yet... retrying ($i/60)"
+            sleep 10
           done
-          echo "❌ MongoDB did not reach healthy state"
+          echo "❌ MongoDB did not reach healthy state in 10 minutes"
           docker logs $(docker ps -qf "name=mongo-e2e") || true
           exit 1
 
