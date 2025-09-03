@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npm run lint || true
+      - run: npm run lint || true   # No rompe el job
 
   # ------------------------------
   # 2️⃣ Unit Tests
@@ -55,24 +55,26 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
 
-      # 🔹 Espera MongoDB hasta 30 minutos
-      - name: Wait for MongoDB
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Wait for MongoDB (max 30 minutes)
         run: |
           echo "⏳ Waiting for MongoDB to be ready (max 30 minutes)..."
-          for i in {1..600}; do  # 600 * 3s ≈ 30 minutos
+          for i in {1..30}; do
             mongosh "mongodb://test:test123@mongo-e2e:27017/demo_e2e?authSource=admin" --eval "db.adminCommand('ping')" && echo "✅ MongoDB ready!" && exit 0
-            echo "Mongo not ready yet... retry ($i/600)"
-            sleep 3
+            echo "Mongo not ready yet... retry ($i/30)"
+            sleep 60  # espera 60 segundos entre retries
           done
           echo "❌ MongoDB did not start in 30 minutes"
           exit 1
 
-      # 🔹 Ejecuta tests E2E
       - name: Run E2E tests
         env:
           MONGO_DB_NAME: demo_e2e
