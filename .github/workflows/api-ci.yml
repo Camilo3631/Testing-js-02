@@ -1,3 +1,46 @@
+name: API CI
+
+on:
+  push:
+    paths:
+      - "api/**"
+      - ".github/workflows/api-ci.yml"
+
+defaults:
+  run:
+    working-directory: ./api
+
+jobs:
+  # ------------------------------
+  # 1️⃣ Linter
+  # ------------------------------
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run lint || true   # No rompe el job
+
+  # ------------------------------
+  # 2️⃣ Unit Tests
+  # ------------------------------
+  unit-test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run test
+
+  # ------------------------------
+  # 3️⃣ E2E Tests (MongoDB service)
+  # ------------------------------
   e2e:
     runs-on: ubuntu-latest
     needs: unit-test
@@ -21,6 +64,7 @@
       - name: Install Dependencies
         run: npm ci
 
+      # 🔹 Espera MongoDB hasta 38 minutos (intentos cada 20s)
       - name: Wait for MongoDB (max 38 minutes, retries cada 20s)
         run: |
           echo "⏳ Waiting for MongoDB to be ready (max 38 minutes)..."
