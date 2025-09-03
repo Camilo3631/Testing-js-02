@@ -12,10 +12,10 @@ defaults:
 
 jobs:
   # ------------------------------
-  # 1️⃣ Linter (macOS)
+  # 1️⃣ Linter (Linux)
   # ------------------------------
   lint:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: 👍 Checkout
         uses: actions/checkout@v4
@@ -28,9 +28,6 @@ jobs:
       - name: 📥 Install Dependencies
         run: npm ci
 
-      - name: 🔍 List files for debug
-        run: ls -la
-
       - name: 🌸 Fix ESLint issues
         run: npm run lint:fix || true  # Arregla automáticamente, pero no falla
 
@@ -38,10 +35,10 @@ jobs:
         run: npm run lint || true      # Muestra errores restantes, no rompe el job
 
   # ------------------------------
-  # 2️⃣ Unit Test (macOS)
+  # 2️⃣ Unit Test (Linux)
   # ------------------------------
   unit-test:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: 👍 Checkout
         uses: actions/checkout@v4
@@ -58,10 +55,10 @@ jobs:
         run: npm run test
 
   # ------------------------------
-  # 3️⃣ E2E (macOS + Docker MongoDB)
+  # 3️⃣ E2E (Linux + Docker MongoDB)
   # ------------------------------
   e2e:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: 👍 Checkout
         uses: actions/checkout@v4
@@ -82,8 +79,7 @@ jobs:
             -e MONGO_INITDB_ROOT_PASSWORD=test123 \
             -e MONGO_INITDB_DATABASE=demo_e2e \
             mongo:6.0
-          # Espera que MongoDB esté listo
-          sleep 10
+          sleep 10  # Espera que MongoDB esté listo
 
       # 🔹 Ejecutar pruebas E2E
       - name: 🌐 Run E2E Tests
