@@ -1,4 +1,4 @@
-name: API CI  # ciclo de integración continuo de nuestra API
+name: API CI
 
 on:
   push:
@@ -10,42 +10,29 @@ defaults:
   run:
     working-directory: ./api
 
-# Jobs: cómo GitHub Actions automatiza tareas en distintos runners
 jobs:
   linter:
-    runs-on: macos-latest  # corre en Mac
+    runs-on: macos-latest
     steps:
-      - name: Checkout  # obtiene tu código
-        uses: actions/checkout@v4
-      - name: Setup Nodejs  # instala Node.js y cachea dependencias
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: ./api/package-lock.json
-      - name: Install dependencies
-        run: npm ci
-      - name: Run linter  # pruebas estáticas
-        run: npm run lint
+      - run: npm ci
+      - run: npm run lint
 
   unit-test:
-    runs-on: macos-latest  # corre en Mac
+    runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Nodejs
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: ./api/package-lock.json
-      - name: Install dependencies
-        run: npm ci
-      - name: Run unit tests
-        run: npm run test
+      - run: npm ci
+      - run: npm run test
 
   e2e:
-    runs-on: ubuntu-latest  # Linux necesario para services
+    runs-on: ubuntu-latest   # Linux necesario para services
     services:
       mongo:
         image: mongo:6.0
@@ -56,16 +43,12 @@ jobs:
         ports:
           - 27017:27017
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Nodejs
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install dependencies
-        run: npm ci
-      - name: Run E2E tests
-        run: npm run test:e2e
+      - run: npm ci
+      - run: npm run test:e2e
         env:
           MONGO_DB_NAME: demo_e2e
           MONGO_URL: mongodb://test:test123@mongo:27017/demo_e2e?authSource=admin
