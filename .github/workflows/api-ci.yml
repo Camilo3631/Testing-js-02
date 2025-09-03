@@ -1,4 +1,4 @@
-name: API CI
+name: API CI  # ciclo de integración continuo de nuestra API
 
 on:
   push: 
@@ -18,8 +18,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npm run lint
+      - run: npm ci  # instala dependencias
+      - run: npm run lint  # corre pruebas estáticas
 
   unit-test:
     runs-on: macos-latest
@@ -28,25 +28,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npm run test
+      - run: npm ci  # instala dependencias
+      - run: npm run test  # corre pruebas unitarias
 
   e2e:
-    runs-on: ubuntu-latest   # services solo funcionan en Linux
-    services:
-      mongo:
-        image: mongo:6.0
-        env:
-          MONGO_INITDB_ROOT_USERNAME: test
-          MONGO_INITDB_ROOT_PASSWORD: test123
-          MONGO_INITDB_DATABASE: demo_e2e
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npm run test:e2e
+      - name: Install MongoDB
+        run: |
+          brew tap mongodb/brew
+          brew install mongodb-community@6.0
+      - name: Start MongoDB
+        run: |
+          brew services start mongodb/brew/mongodb-community
+          sleep 5  # espera a que Mongo esté listo
+      - run: npm ci  # instala dependencias
+      - name: Run E2E tests
+        run: npm run test:e2e
         env:
-          MONGO_DB_NAME: demo
-          MONGO_URL: mongodb://test:test123@mongo:27017/demo_e2e?authSource=admin
+          MONGO_DB_NAME: demo_e2e
+          MONGO_URL: mongodb://localhost:27017/demo_e2e
