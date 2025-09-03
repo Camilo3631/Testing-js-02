@@ -11,6 +11,9 @@ defaults:
     working-directory: ./api
 
 jobs:
+  # ------------------------------
+  # 1️⃣ Linter
+  # ------------------------------
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -21,6 +24,9 @@ jobs:
       - run: npm ci
       - run: npm run lint || true
 
+  # ------------------------------
+  # 2️⃣ Unit Tests
+  # ------------------------------
   unit-test:
     runs-on: ubuntu-latest
     needs: lint
@@ -32,13 +38,16 @@ jobs:
       - run: npm ci
       - run: npm run test
 
+  # ------------------------------
+  # 3️⃣ E2E Tests (MongoDB service)
+  # ------------------------------
   e2e:
     runs-on: ubuntu-latest
     needs: unit-test
 
     services:
       mongo-e2e:
-        image: mongo:6.0
+        image: mongo:5.0
         env:
           MONGO_INITDB_ROOT_USERNAME: test
           MONGO_INITDB_ROOT_PASSWORD: test123
@@ -57,29 +66,29 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      # 🔹 Espera MongoDB hasta 38 minutos (retry cada 20s)
-      - name: Wait for MongoDB (max 38 min, retries cada 20s)
+      # 🔹 Instala mongosh para ping
+      - name: Install mongosh
         run: |
-          echo "⏳ Waiting for MongoDB to be ready (max 38 minutes)..."
-          container_id=$(docker ps -qf "name=mongo-e2e")
-          if [ -z "$container_id" ]; then
-            echo "❌ MongoDB container not found"
-            exit 1
-          fi
+          curl -fsSL https://pgp.mongodb.com/server-5.0.asc | gpg --dearmor | sudo tee /usr/share/keyrings/mongodb-server-5.0.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/mongodb-server-5.0.gpg] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-mongosh
 
-          for i in {1..114}; do   # 114 * 20s = 2280s = 38 minutos
-            mongosh "mongodb://test:test123@mongo-e2e:27017/demo_e2e?authSource=admin" --eval "db.adminCommand('ping')" && echo "✅ MongoDB ready!" && exit 0
-            echo "Mongo not ready yet... retry ($i/114)"
+      # 🔹 Espera MongoDB (max 60 minutos, retry cada 20s)
+      - name: Wait for MongoDB
+        run: |
+          echo "⏳ Waiting for MongoDB (max 60 minutes)..."
+          for i in {1..180}; do   # 180 * 20s = 3600s = 60 min
+            mongosh "mongodb://test:test123@mongo-e2e:27017/demo_e2e?authSource=admin&retryWrites=false" --eval "db.adminCommand('ping')" && echo "✅ MongoDB ready!" && exit 0
+            echo "Mongo not ready yet... retry ($i/180)"
             sleep 20
           done
-
-          echo "❌ MongoDB did not start in 38 minutes. Dumping container logs..."
-          docker logs $container_id || true
+          echo "❌ MongoDB did not start in 60 minutes"
           exit 1
 
       # 🔹 Ejecuta tests E2E
       - name: Run E2E tests
         env:
           MONGO_DB_NAME: demo_e2e
-          MONGO_URL: mongodb://test:test123@mongo-e2e:27017/demo_e2e?authSource=admin
+          MONGO_URL: mongodb://test:test123@mongo-e2e:27017/demo_e2e?authSource=admin&retryWrites=false
         run: npm run test:e2e
