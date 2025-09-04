@@ -39,7 +39,7 @@ jobs:
       - run: npm run test
 
   # ------------------------------
-  # 3️⃣ E2E Tests (MongoDB 6.0)
+  # 3️⃣ E2E Tests con MongoDB 6.0
   # ------------------------------
   e2e:
     runs-on: ubuntu-latest
@@ -54,15 +54,22 @@ jobs:
           MONGO_INITDB_DATABASE: demo_e2e
         # Puerto interno del contenedor
         ports:
-          - 27018:27017
+          - 27018:27017  # Opcional, para conectar desde el host local
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Wait for Mongo to be ready
+        run: |
+          echo "Waiting for Mongo to start..."
+          npx wait-for-it mongo-e2e:27017 --timeout=30
+
       - name: Run E2E tests
         env:
           MONGO_DB_NAME: demo_e2e
-          # Desde GH Actions, el puerto interno sigue siendo 27017
+          # Siempre usar el puerto interno del contenedor en Actions
           MONGO_URL: mongodb://test:test123@mongo-e2e:27017?retryWrites=true&writeConcern=majority
         run: npm run test:E2E
