@@ -1,7 +1,6 @@
 // books.E2E.js
 
-// Aumenta el timeout global a 120 segundos (más seguro en CI)
-jest.setTimeout(120000);
+jest.setTimeout(180000); // 3 minutos, más seguro en CI
 
 const request = require('supertest');
 const { MongoClient } = require('mongodb');
@@ -16,54 +15,74 @@ describe('Test for books', () => {
     let database = null;
     let client = null;
 
+    // ------------------------------
     // Helper: espera a que MongoDB esté listo
+    // ------------------------------
     const waitForMongo = async () => {
         let connected = false;
         let attempts = 0;
-        while (!connected && attempts < 15) { // hasta 15 intentos
+        const maxAttempts = 30; // hasta 30 intentos
+        const waitTime = 5000;  // 5s cada intento => hasta 150s
+
+        while (!connected && attempts < maxAttempts) {
             try {
                 client = new MongoClient(MONGO_URI);
                 await client.connect();
                 connected = true;
             } catch (err) {
                 attempts++;
-                console.log(`Mongo not ready yet, retry ${attempts}/15`);
-                await new Promise(res => setTimeout(res, 5000)); // espera 5s
+                console.log(`Mongo not ready yet, retry ${attempts}/${maxAttempts}`);
+                await new Promise(res => setTimeout(res, waitTime));
             }
         }
+
         if (!connected) {
             throw new Error('MongoDB did not connect after retries');
         }
+
         database = client.db(DB_NAME);
     };
 
+    // ------------------------------
+    // Setup antes de los tests
+    // ------------------------------
     beforeAll(async () => {
-        app = createApp();
-        await waitForMongo();
+        app = createApp();       // Supertest puede usar directamente app
+        await waitForMongo();    // espera a MongoDB
     });
 
     afterAll(async () => {
         if (client) await client.close();
     });
 
+    // ------------------------------
     // Limpieza después de cada test
+    // ------------------------------
     afterEach(async () => {
-        await database.collection('books').deleteMany({});
+        if (database) {
+            await database.collection('books').deleteMany({});
+        }
     });
 
-    describe('test for [GET] /api/v1/books', () => {
+    // ------------------------------
+    // Tests
+    // ------------------------------
+    describe('GET /api/v1/books', () => {
         test('should return a list of books', async () => {
+            if (!database) throw new Error('Database not initialized');
+
             // Arrange: semilla de datos
             const seedData = await database.collection('books').insertMany([
                 { name: 'Book1', year: 1998, author: 'Kamil' },
                 { name: 'Book2', year: 2020, author: 'Kamil' },
             ]);
 
-            // Act & Assert
+            // Act
             const res = await request(app)
                 .get('/api/v1/books')
                 .expect(200);
 
+            // Assert
             expect(res.body.length).toEqual(seedData.insertedCount);
         });
     });
