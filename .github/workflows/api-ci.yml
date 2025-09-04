@@ -41,7 +41,7 @@ jobs:
   # ------------------------------
   # 3️⃣ E2E Tests (MongoDB 6.0)
   # ------------------------------
-   e2e:
+    e2e:
     runs-on: ubuntu-latest
     container:
       image: node:20
@@ -55,14 +55,7 @@ jobs:
           MONGO_INITDB_ROOT_USERNAME: test
           MONGO_INITDB_ROOT_PASSWORD: test123
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: install
-        shell: bash
-        run: npm ci
-
-        steps:
+      steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: install
@@ -73,4 +66,4 @@ jobs:
         run: npm run test:E2E
         env:
           MONGO_DB_NAME: demo
-          MONGO_URL: mongodb://test:test123@mongo-e2e:27017?retryWrites=true&writeConcern=majority
+          MONGO_URL: mongodb://test:test123@mongo-e2e:27018?retryWrites=true&writeConcern=admin
