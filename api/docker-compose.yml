@@ -1,4 +1,4 @@
-name: API CI  # Ciclo de integración continuo de nuestra API
+name: API CI
 
 on:
   push:
@@ -8,84 +8,64 @@ on:
 
 defaults:
   run:
-    working-directory: ./api  # Ajusta según dónde esté tu package.json
+    working-directory: ./api
 
 jobs:
-  # ------------------------------
   # 1️⃣ Linter
-  # ------------------------------
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm ci
+      - run: npm run lint || true
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint || true  # No falla si hay errores
-
-  # ------------------------------
   # 2️⃣ Unit Tests
-  # ------------------------------
   unit-test:
     runs-on: ubuntu-latest
     needs: lint
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm ci
+      - run: npm run test
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Unit Tests
-        run: npm run test
-
-  # ------------------------------
   # 3️⃣ E2E Tests con MongoDB 6.0
-  # ------------------------------
   e2e:
     runs-on: ubuntu-latest
     needs: unit-test
     services:
-      mongo-e2e:
+      mongo:
         image: mongo:6.0
         env:
           MONGO_INITDB_ROOT_USERNAME: test
           MONGO_INITDB_ROOT_PASSWORD: test123
           MONGO_INITDB_DATABASE: demo_e2e
-        ports:
-          - 27017:27017
+        options: >-
+          --health-cmd "mongo --eval 'db.adminCommand(\"ping\")'" 
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Wait for Mongo to be ready
+      - run: npm ci
+      - name: Wait for MongoDB to be ready
         run: |
-          echo "Waiting for Mongo to start..."
-          npx wait-for-it mongo-e2e:27017 --timeout=60
-
-      - name: Run E2E tests
+          echo "Waiting for MongoDB..."
+          for i in {1..15}; do
+            mongo mongo:27017 -u test -p test123 --authenticationDatabase admin --eval "db.stats()" && break
+            echo "Mongo not ready yet..."
+            sleep 5
+          done
+      - name: Run E2E Tests
         env:
           MONGO_DB_NAME: demo_e2e
-          MONGO_URL: mongodb://test:test123@mongo-e2e:27017?retryWrites=true&writeConcern=majority
+          MONGO_URL: mongodb://test:test123@mongo:27017?retryWrites=true&writeConcern=majority
         run: npm run test:E2E
